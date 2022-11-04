@@ -90,7 +90,7 @@ public class ActionObserver<Value> {
 
 //    public typealias PublisherType = AnyPublisher<Value, Never>
 
-    private(set) var value: Value
+    public private(set) var value: Value
 
     private let action: AnyAction<Value>?
 
@@ -118,6 +118,9 @@ public class ActionObserver<Value> {
 public class NoopAction<Value>: Action {
 
     private let subject = PassthroughSubject<Value, Never>()
+
+    public init() {
+    }
 
     public var publisher: AnyPublisher<Value, Never> {
         subject.eraseToAnyPublisher()
