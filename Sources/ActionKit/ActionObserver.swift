@@ -11,6 +11,30 @@ import Combine
 @propertyWrapper
 public class ActionObserver<Value> {
 
+    // MARK: Public types
+
+    public class Adapter {
+        public let observer: ActionObserver<Value>
+
+        public var action: AnyAction<Value> {
+            get {
+                observer.action
+            }
+            set {
+                observer.action = newValue
+            }
+        }
+
+        init(observer: ActionObserver<Value>) {
+            self.observer = observer
+            self.action = action
+        }
+
+        public var binding: Binding<Value> {
+            self.observer.binding
+        }
+    }
+
     // MARK: - Private members
 
     private var action: AnyAction<Value> {
@@ -58,12 +82,9 @@ public class ActionObserver<Value> {
         }
     }
 
-    public var projectedValue: AnyAction<Value> {
+    public var projectedValue: Adapter {
         get {
-            self.action
-        }
-        set {
-            self.action = newValue
+            .init(observer: self)
         }
     }
 
