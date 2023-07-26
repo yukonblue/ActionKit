@@ -9,16 +9,11 @@ import Combine
 
 public class NoopAction<Value>: Action {
 
-    private let subject = PassthroughSubject<Value, Never>()
-
-    public init() {
-    }
+    public init() {}
 
     public var publisher: AnyPublisher<Value, Never> {
-        subject.eraseToAnyPublisher()
+        Empty().eraseToAnyPublisher()
     }
 
-    public func update(value: Value) {
-        subject.send(value)
-    }
+    public func update(value: Value) {}
 }

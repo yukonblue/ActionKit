@@ -108,3 +108,54 @@ class ActionObserverTests: XCTestCase {
         XCTAssertEqual(observer.value, valueToBeUpdated)
     }
 }
+
+extension ActionObserverTests {
+    
+    struct MyStruct {
+        @ActionObserver var count: Int = 0
+    }
+    
+    func test_actionObserverAsPropertyWrapper_andUpdateValueThroughProperty() throws {
+        let myStruct = MyStruct()
+        
+        // Check the initial value on the property.
+        XCTAssertEqual(myStruct.count, 0)
+        
+        let valueToBeUpdated = 3
+        
+        let updatedReceivedExpectation = XCTestExpectation(description: "Value updated")
+        
+        let action = MyAction(valueToBeUpdated: valueToBeUpdated, expectation: updatedReceivedExpectation)
+        
+        myStruct.$count = action.toAnyAction
+        
+        myStruct.count = valueToBeUpdated
+        
+        wait(for: [updatedReceivedExpectation], timeout: TimeInterval(valueToBeUpdated)+1)
+        
+        // Check the updated value of the property.
+        XCTAssertEqual(myStruct.count, valueToBeUpdated)
+    }
+
+    func test_actionObserverAsPropertyWrapper_andUpdateValueThroughAction() throws {
+        let myStruct = MyStruct()
+
+        // Check the initial value on the property.
+        XCTAssertEqual(myStruct.count, 0)
+
+        let valueToBeUpdated = 3
+
+        let updatedReceivedExpectation = XCTestExpectation(description: "Value updated")
+
+        let action = MyAction(valueToBeUpdated: valueToBeUpdated, expectation: updatedReceivedExpectation)
+
+        myStruct.$count = action.toAnyAction
+
+        myStruct.$count.update(value: valueToBeUpdated)
+
+        wait(for: [updatedReceivedExpectation], timeout: TimeInterval(valueToBeUpdated)+1)
+
+        // Check the updated value of the property.
+        XCTAssertEqual(myStruct.count, valueToBeUpdated)
+    }
+}
