@@ -121,6 +121,35 @@ extension ActionObserverTests {
         // Check the updated value of the property.
         XCTAssertEqual(myStruct.count, valueToBeUpdated)
     }
+
+    func test_actionObserverAsPropertyWrapper_andUpdateValueThroughBinding() throws {
+        let myStruct = MyStruct()
+
+        // Check the initial value on the property.
+        XCTAssertEqual(myStruct.count, 0)
+
+        let valueToBeUpdated = 3
+
+        let updatedReceivedExpectation = expectation(description: "Value updated")
+
+        let action = MyAction(
+            valueToBeUpdated: valueToBeUpdated,
+            expectation: updatedReceivedExpectation
+        )
+
+        // Update the action on the struct to be the new action.
+        myStruct.$count.action = action.toAnyAction
+
+        myStruct.$count.binding.wrappedValue = valueToBeUpdated
+
+        wait(
+            for: [updatedReceivedExpectation],
+            timeout: TimeInterval(valueToBeUpdated)+1
+        )
+
+        // Check the updated value of the property.
+        XCTAssertEqual(myStruct.count, valueToBeUpdated)
+    }
 }
 
 fileprivate class MyAction<Value: Equatable>: Action {
