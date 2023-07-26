@@ -80,8 +80,8 @@ extension ActionObserverTests {
         )
 
         // Update the action on the struct to be the new action.
-        myStruct.$count = action.toAnyAction
-
+        myStruct.$count.action = action.toAnyAction
+        
         myStruct.count = valueToBeUpdated
 
         wait(
@@ -109,9 +109,9 @@ extension ActionObserverTests {
         )
 
         // Update the action on the struct to be the new action.
-        myStruct.$count = action.toAnyAction
+        myStruct.$count.action = action.toAnyAction
 
-        myStruct.$count.update(value: valueToBeUpdated)
+        myStruct.$count.action.update(value: valueToBeUpdated)
 
         wait(
             for: [updatedReceivedExpectation],
