@@ -65,64 +65,26 @@ extension ActionObserverTests {
     }
 
     func test_actionObserverAsPropertyWrapper_andUpdateValueThroughProperty() throws {
-        let myStruct = MyStruct()
-
-        // Check the initial value on the property.
-        XCTAssertEqual(myStruct.count, 0)
-
-        let valueToBeUpdated = 3
-
-        let updatedReceivedExpectation = expectation(description: "Value updated")
-
-        let action = MyAction(
-            valueToBeUpdated: valueToBeUpdated,
-            expectation: updatedReceivedExpectation
-        )
-
-        // Update the action on the struct to be the new action.
-        myStruct.$count.action = action.toAnyAction
-        
-        myStruct.count = valueToBeUpdated
-
-        wait(
-            for: [updatedReceivedExpectation],
-            timeout: TimeInterval(valueToBeUpdated)+1
-        )
-
-        // Check the updated value of the property.
-        XCTAssertEqual(myStruct.count, valueToBeUpdated)
+        try _test_actionObserverAsPropertyWrapper { myStruct, valueToBeUpdated in
+            myStruct.count = valueToBeUpdated
+        }
     }
 
     func test_actionObserverAsPropertyWrapper_andUpdateValueThroughAction() throws {
-        let myStruct = MyStruct()
-
-        // Check the initial value on the property.
-        XCTAssertEqual(myStruct.count, 0)
-
-        let valueToBeUpdated = 3
-
-        let updatedReceivedExpectation = expectation(description: "Value updated")
-
-        let action = MyAction(
-            valueToBeUpdated: valueToBeUpdated,
-            expectation: updatedReceivedExpectation
-        )
-
-        // Update the action on the struct to be the new action.
-        myStruct.$count.action = action.toAnyAction
-
-        myStruct.$count.action.update(value: valueToBeUpdated)
-
-        wait(
-            for: [updatedReceivedExpectation],
-            timeout: TimeInterval(valueToBeUpdated)+1
-        )
-
-        // Check the updated value of the property.
-        XCTAssertEqual(myStruct.count, valueToBeUpdated)
+        try _test_actionObserverAsPropertyWrapper { myStruct, valueToBeUpdated in
+            myStruct.$count.action.update(value: valueToBeUpdated)
+        }
     }
 
     func test_actionObserverAsPropertyWrapper_andUpdateValueThroughBinding() throws {
+        try _test_actionObserverAsPropertyWrapper { myStruct, valueToBeUpdated in
+            myStruct.$count.binding.wrappedValue = valueToBeUpdated
+        }
+    }
+
+    private func _test_actionObserverAsPropertyWrapper(
+        withUpdateHandler updateHandler: (MyStruct, Int) -> Void
+    ) throws {
         let myStruct = MyStruct()
 
         // Check the initial value on the property.
@@ -140,7 +102,7 @@ extension ActionObserverTests {
         // Update the action on the struct to be the new action.
         myStruct.$count.action = action.toAnyAction
 
-        myStruct.$count.binding.wrappedValue = valueToBeUpdated
+        updateHandler(myStruct, valueToBeUpdated)
 
         wait(
             for: [updatedReceivedExpectation],
