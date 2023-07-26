@@ -45,7 +45,7 @@ fileprivate class AnyStorage<Value> {
 
 fileprivate final class Storage<A: Action>: AnyStorage<A.Value> {
 
-    let action: A
+    private let action: A
 
     init(action: A) {
         self.action = action

@@ -10,84 +10,29 @@ import Combine
 import XCTest
 @testable import ActionKit
 
-class MyAction: Action {
-
-    private let subject: PassthroughSubject<Int, Never>
-
-    private let valueToBeUpdated: Int
-    private let expectation: XCTestExpectation
-
-    init(valueToBeUpdated: Int, expectation: XCTestExpectation) {
-        self.valueToBeUpdated = valueToBeUpdated
-        self.expectation = expectation
-
-        self.subject = PassthroughSubject<Int, Never>()
-    }
-
-    var publisher: AnyPublisher<Int, Never> {
-        subject.eraseToAnyPublisher()
-    }
-
-    func update(value: Int) {
-        let queue = OperationQueue()
-        queue.addOperation({
-            sleep(UInt32(value))
-
-            if value == self.valueToBeUpdated {
-                self.subject.send(value)
-                self.expectation.fulfill()
-                self.subject.send(completion: .finished)
-            }
-        })
-    }
-}
-
-class MyAction2: Action {
-
-    private let subject: PassthroughSubject<Bool, Never>
-
-    private let valueToBeUpdated: Bool
-    private let expectation: XCTestExpectation
-
-    init(valueToBeUpdated: Bool, expectation: XCTestExpectation) {
-        self.valueToBeUpdated = valueToBeUpdated
-        self.expectation = expectation
-
-        self.subject = PassthroughSubject<Bool, Never>()
-    }
-
-    var publisher: AnyPublisher<Bool, Never> {
-        subject.eraseToAnyPublisher()
-    }
-
-    func update(value: Bool) {
-        let queue = OperationQueue()
-        queue.addOperation({
-            sleep(1)
-
-            if value == self.valueToBeUpdated {
-                self.subject.send(value)
-                self.expectation.fulfill()
-                self.subject.send(completion: .finished)
-            }
-        })
-    }
-}
-
 class ActionObserverTests: XCTestCase {
 
     func testActionObserver() throws {
         let valueToBeUpdated = 3
 
-        let updatedReceivedExpectation = XCTestExpectation(description: "Value updated")
+        let updatedReceivedExpectation = expectation(description: "Value updated")
 
-        let action = MyAction(valueToBeUpdated: valueToBeUpdated, expectation: updatedReceivedExpectation)
+        let action = MyAction(
+            valueToBeUpdated: valueToBeUpdated,
+            expectation: updatedReceivedExpectation
+        )
 
-        let observer = ActionObserver(initialValue: 0, action: action.toAnyAction)
+        let observer = ActionObserver(
+            initialValue: 0,
+            action: action.toAnyAction
+        )
 
         observer.binding.wrappedValue = valueToBeUpdated
 
-        wait(for: [updatedReceivedExpectation], timeout: TimeInterval(valueToBeUpdated)+1)
+        wait(
+            for: [updatedReceivedExpectation],
+            timeout: TimeInterval(valueToBeUpdated)+1
+        )
 
         XCTAssertEqual(observer.value, valueToBeUpdated)
     }
@@ -95,13 +40,17 @@ class ActionObserverTests: XCTestCase {
     func testActionObserverThroughTogglingOnBindingsWrappedValue() throws {
         let valueToBeUpdated = true
 
-        let updatedReceivedExpectation = XCTestExpectation(description: "Value updated")
+        let updatedReceivedExpectation = expectation(description: "Value updated")
 
-        let action = MyAction2(valueToBeUpdated: valueToBeUpdated, expectation: updatedReceivedExpectation)
+        let action = MyAction(
+            valueToBeUpdated: valueToBeUpdated,
+            expectation: updatedReceivedExpectation
+        )
 
         let observer = ActionObserver(initialValue: false, action: action.toAnyAction)
 
-        observer.binding.wrappedValue.toggle() // Here we update the value this way instead of through assignment
+        // Here we update the value this way instead of through assignment
+        observer.binding.wrappedValue.toggle()
 
         wait(for: [updatedReceivedExpectation], timeout: 2)
 
@@ -110,29 +59,36 @@ class ActionObserverTests: XCTestCase {
 }
 
 extension ActionObserverTests {
-    
+
     struct MyStruct {
         @ActionObserver var count: Int = 0
     }
-    
+
     func test_actionObserverAsPropertyWrapper_andUpdateValueThroughProperty() throws {
         let myStruct = MyStruct()
-        
+
         // Check the initial value on the property.
         XCTAssertEqual(myStruct.count, 0)
-        
+
         let valueToBeUpdated = 3
-        
-        let updatedReceivedExpectation = XCTestExpectation(description: "Value updated")
-        
-        let action = MyAction(valueToBeUpdated: valueToBeUpdated, expectation: updatedReceivedExpectation)
-        
+
+        let updatedReceivedExpectation = expectation(description: "Value updated")
+
+        let action = MyAction(
+            valueToBeUpdated: valueToBeUpdated,
+            expectation: updatedReceivedExpectation
+        )
+
+        // Update the action on the struct to be the new action.
         myStruct.$count = action.toAnyAction
-        
+
         myStruct.count = valueToBeUpdated
-        
-        wait(for: [updatedReceivedExpectation], timeout: TimeInterval(valueToBeUpdated)+1)
-        
+
+        wait(
+            for: [updatedReceivedExpectation],
+            timeout: TimeInterval(valueToBeUpdated)+1
+        )
+
         // Check the updated value of the property.
         XCTAssertEqual(myStruct.count, valueToBeUpdated)
     }
@@ -145,17 +101,67 @@ extension ActionObserverTests {
 
         let valueToBeUpdated = 3
 
-        let updatedReceivedExpectation = XCTestExpectation(description: "Value updated")
+        let updatedReceivedExpectation = expectation(description: "Value updated")
 
-        let action = MyAction(valueToBeUpdated: valueToBeUpdated, expectation: updatedReceivedExpectation)
+        let action = MyAction(
+            valueToBeUpdated: valueToBeUpdated,
+            expectation: updatedReceivedExpectation
+        )
 
+        // Update the action on the struct to be the new action.
         myStruct.$count = action.toAnyAction
 
         myStruct.$count.update(value: valueToBeUpdated)
 
-        wait(for: [updatedReceivedExpectation], timeout: TimeInterval(valueToBeUpdated)+1)
+        wait(
+            for: [updatedReceivedExpectation],
+            timeout: TimeInterval(valueToBeUpdated)+1
+        )
 
         // Check the updated value of the property.
         XCTAssertEqual(myStruct.count, valueToBeUpdated)
+    }
+}
+
+fileprivate class MyAction<Value: Equatable>: Action {
+
+    private let subject: PassthroughSubject<Value, Never>
+
+    private let valueToBeUpdated: Value
+    private let expectation: XCTestExpectation
+
+    init(
+        valueToBeUpdated: Value,
+        expectation: XCTestExpectation
+    ) {
+        self.valueToBeUpdated = valueToBeUpdated
+        self.expectation = expectation
+
+        self.subject = PassthroughSubject<Value, Never>()
+    }
+
+    var publisher: AnyPublisher<Value, Never> {
+        subject.eraseToAnyPublisher()
+    }
+
+    func update(value: Value) {
+        let queue = OperationQueue()
+        queue.addOperation({
+            self.delay(by: value)
+
+            if value == self.valueToBeUpdated {
+                self.subject.send(value)
+                self.expectation.fulfill()
+                self.subject.send(completion: .finished)
+            }
+        })
+    }
+
+    private func delay(by value: Value) {
+        sleep(1)
+    }
+
+    private func delay(by value: Value) where Value == Int {
+        sleep(UInt32(value))
     }
 }
