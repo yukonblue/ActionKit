@@ -8,32 +8,74 @@
 import SwiftUI
 import Combine
 
-//@propertyWrapper
+@propertyWrapper
 public class ActionObserver<Value> {
 
-//    public typealias PublisherType = AnyPublisher<Value, Never>
+    // MARK: - Private members
+
+    private var action: AnyAction<Value> {
+        didSet {
+            self.wireUpActionSink()
+        }
+    }
+
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Public members
 
     public private(set) var value: Value
-
-    private let action: AnyAction<Value>?
-
-    private var cancellable: AnyCancellable? = nil
 
     public var binding: Binding<Value> {
         Binding<Value> {
             self.value
         } set: { valueToBeUpdatedTo in
-            self.action?.update(value: valueToBeUpdatedTo)
+            self.action.update(value: valueToBeUpdatedTo)
         }
     }
 
-    public init(initialValue: Value, action: AnyAction<Value>? = nil) {
+    // MARK: - Public initializers
+
+    public init(initialValue: Value, action: AnyAction<Value>) {
         self.value = initialValue
 
         self.action = action
+        self.wireUpActionSink()
+    }
 
-        self.cancellable = self.action?.publisher.sink { newValue in
-            self.value = newValue
+    public init(wrappedValue value: Value) {
+        self.value = value
+        self.action = NoopAction<Value>().toAnyAction
+    }
+
+    // MARK: - Property wrapper support
+
+    public var wrappedValue: Value {
+        get {
+            value
         }
+        set {
+            self.action.update(value: newValue)
+        }
+    }
+
+    public var projectedValue: AnyAction<Value> {
+        get {
+            self.action
+        }
+        set {
+            self.action = newValue
+        }
+    }
+
+    // MARK: - Private helpers
+
+    private func wireUpActionSink() {
+        self
+            .action
+            .publisher
+            .sink { newValue in
+                self.value = newValue
+            }
+            .store(in: &self.cancellables)
     }
 }
